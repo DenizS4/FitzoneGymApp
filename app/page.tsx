@@ -1,13 +1,30 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Dumbbell, Users, Target, Clock, Calculator, Star, Phone, Mail, MapPin, Menu, X } from "lucide-react"
+import {
+  Dumbbell,
+  Users,
+  Target,
+  Clock,
+  Calculator,
+  Star,
+  Phone,
+  Mail,
+  MapPin,
+  Menu,
+  X,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react"
 import Image from "next/image"
+import { sendContactEmail } from "./actions/contact"
 
 export default function GymWebsite() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -24,6 +41,16 @@ export default function GymWebsite() {
     { id: 7, day: "Sunday", exercise: "Rest Day", completed: false },
   ])
 
+  // Contact form state
+  const [contactForm, setContactForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    message: "",
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
+
   // Enhanced workout planner state
   const [monthlyWorkouts, setMonthlyWorkouts] = useState([])
   const [showAddWorkout, setShowAddWorkout] = useState(false)
@@ -34,7 +61,7 @@ export default function GymWebsite() {
   })
 
   const currentDate = new Date()
-  const currentMonth = currentDate.toLocaleString("default", { month: "long" })
+  const currentMonth = currentDate.toLocaleString("en-US", { month: "long" })
   const currentYear = currentDate.getFullYear()
 
   // Load workouts from localStorage on component mount
@@ -50,8 +77,36 @@ export default function GymWebsite() {
     localStorage.setItem("gymWorkouts", JSON.stringify(monthlyWorkouts))
   }, [monthlyWorkouts])
 
+  // Handle contact form submission
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitStatus(null)
+
+    const formData = new FormData()
+    formData.append("firstName", contactForm.firstName)
+    formData.append("lastName", contactForm.lastName)
+    formData.append("email", contactForm.email)
+    formData.append("message", contactForm.message)
+
+    try {
+      const result = await sendContactEmail(formData)
+
+      if (result.success) {
+        setSubmitStatus({ type: "success", message: result.message || "Message sent successfully!" })
+        setContactForm({ firstName: "", lastName: "", email: "", message: "" })
+      } else {
+        setSubmitStatus({ type: "error", message: result.error || "Failed to send message" })
+      }
+    } catch (error) {
+      setSubmitStatus({ type: "error", message: "An unexpected error occurred" })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   // Generate calendar days for current month
-  const getDaysInMonth = (date) => {
+  const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth()
     const firstDay = new Date(year, month, 1)
@@ -128,7 +183,7 @@ export default function GymWebsite() {
 
   const toggleWorkout = (id: number) => {
     setWorkouts(
-      workouts.map((workout) => (workout.id === id ? { ...workout, completed: !workout.completed } : workout)),
+        workouts.map((workout) => (workout.id === id ? { ...workout, completed: !workout.completed } : workout)),
     )
   }
 
@@ -169,6 +224,24 @@ export default function GymWebsite() {
                   About
                 </button>
                 <button
+                    onClick={() => scrollToSection("services")}
+                    className="text-white hover:text-purple-400 transition-colors"
+                >
+                  Services
+                </button>
+                <button
+                    onClick={() => scrollToSection("staff")}
+                    className="text-white hover:text-purple-400 transition-colors"
+                >
+                  Staff
+                </button>
+                <button
+                    onClick={() => scrollToSection("equipment")}
+                    className="text-white hover:text-purple-400 transition-colors"
+                >
+                  Equipment
+                </button>
+                <button
                     onClick={() => scrollToSection("calculator")}
                     className="text-white hover:text-purple-400 transition-colors"
                 >
@@ -180,24 +253,8 @@ export default function GymWebsite() {
                 >
                   Workouts
                 </button>
-                <button
-                    onClick={() => scrollToSection("services")}
-                    className="text-white hover:text-purple-400 transition-colors"
-                >
-                  Services
-                </button>
-                <button
-                    onClick={() => scrollToSection("equipment")}
-                    className="text-white hover:text-purple-400 transition-colors"
-                >
-                  Equipment
-                </button>
-                <button
-                    onClick={() => scrollToSection("staff")}
-                    className="text-white hover:text-purple-400 transition-colors"
-                >
-                  Staff
-                </button>
+
+
                 <button
                     onClick={() => scrollToSection("contact")}
                     className="text-white hover:text-purple-400 transition-colors"
@@ -295,24 +352,24 @@ export default function GymWebsite() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
+                  onClick={() => scrollToSection("workouts")}
                   size="lg"
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 text-lg shadow-lg"
-                  onClick={() => scrollToSection("workouts")}
               >
-
-                Plan Your Workout
+                Plan Your Workouts
               </Button>
               <Button
+                  onClick={() => scrollToSection("services")}
                   size="lg"
                   variant="outline"
                   className="border-white text-white hover:bg-white hover:text-black px-8 py-3 text-lg bg-transparent shadow-lg"
-                  onClick={() => scrollToSection("services")}
               >
                 View Programs
               </Button>
             </div>
           </div>
         </section>
+
         {/* About Section */}
         <section id="about" className="py-20 bg-gradient-to-r from-slate-800 to-slate-900">
           <div className="container mx-auto px-4">
@@ -326,15 +383,15 @@ export default function GymWebsite() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div
-                  className="relative w-fit rounded-xl overflow-hidden bg-gradient-to-tr from-slate-800 via-slate-900 to-slate-800 p-1 shadow-inner">
+              <div className="relative">
                 <Image
                     src="https://i.imgur.com/lTt4PlX.jpeg"
                     alt="Fit Athletic Woman Training"
                     width={500}
                     height={600}
-                    className="rounded-xl object-cover"
+                    className="rounded-lg shadow-2xl"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent rounded-lg"></div>
               </div>
               <div className="space-y-8">
                 <div className="flex items-start space-x-4">
@@ -369,6 +426,328 @@ export default function GymWebsite() {
               </div>
 
 
+            </div>
+          </div>
+        </section>
+
+
+        {/* Services Section */}
+        <section id="services" className="py-20 bg-gradient-to-l from-slate-800 to-slate-900">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Our Services
+              </h2>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                Comprehensive fitness solutions designed to help you reach your goals.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors overflow-hidden">
+                {/* Full-width image container */}
+                <div className="relative w-full h-64">
+                  <Image
+                      src="https://i.imgur.com/GMfVqYs.jpeg"
+                      alt="Personal Training Session"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
+
+                {/* Card content - unchanged from your original */}
+                <CardHeader>
+                  <div
+                      className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                    <Dumbbell className="h-6 w-6 text-white"/>
+                  </div>
+                  <CardTitle className="text-white">Personal Training</CardTitle>
+                  <CardDescription className="text-gray-300">One-on-one sessions with certified
+                    trainers</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Customized workout plans
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Nutrition guidance
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Progress tracking
+                    </li>
+                  </ul>
+                  <div className="mt-4">
+                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600">From $80/session</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Repeat the same structure for other cards */}
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors overflow-hidden">
+                <div className="relative w-full h-64">
+                  <Image
+                      src="https://i.imgur.com/DwZQSkP.jpeg"
+                      alt="Group Fitness Class"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
+                <CardHeader>
+                  <div
+                      className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                    <Users className="h-6 w-6 text-white"/>
+                  </div>
+                  <CardTitle className="text-white">Group Classes</CardTitle>
+                  <CardDescription className="text-gray-300">High-energy group fitness sessions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      HIIT & Cardio
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Yoga & Pilates
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Strength Training
+                    </li>
+                  </ul>
+                  <div className="mt-4">
+                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600">From $25/class</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors overflow-hidden">
+                <div className="relative w-full h-64">
+                  <Image
+                      src="https://www.perpetualwellbeing.com.au/wp-content/uploads/2023/01/nutrition-coaching.jpg"
+                      alt="Nutrition and Meal Planning"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
+                <CardHeader>
+                  <div
+                      className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                    <Target className="h-6 w-6 text-white"/>
+                  </div>
+                  <CardTitle className="text-white">Nutrition Coaching</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Professional dietary guidance and meal planning
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Meal planning
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Supplement advice
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-400"/>
+                      Body composition analysis
+                    </li>
+                  </ul>
+                  <div className="mt-4">
+                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600">From $60/session</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Our Staff Section */}
+
+        <section id="staff" className="py-20 bg-gradient-to-l from-purple-900 to-slate-900">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Meet Our Expert Team
+              </h2>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                Our certified trainers and fitness experts are here to guide you on your fitness journey.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
+                <CardContent className="p-6 text-center">
+                  <div className="relative w-32 h-48 mx-auto mb-4 rounded-2xl overflow-hidden">
+                    <Image
+                        src="https://i.imgur.com/K3PTFjK.png"
+                        alt="Sarah Johnson - Head Trainer"
+                        fill
+                        className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Sarah Johnson</h3>
+                  <p className="text-purple-400 font-semibold mb-2">Head Trainer</p>
+                  <p className="text-gray-300 text-sm mb-3">
+                    10+ years experience in strength training and nutrition coaching
+                  </p>
+                  <div className="flex justify-center space-x-2">
+                    <Badge className="bg-purple-600/50 text-purple-200">NASM Certified</Badge>
+                    <Badge className="bg-pink-600/50 text-pink-200">Nutrition</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
+                <CardContent className="p-6 text-center">
+                  <div className="relative w-32 h-48 mx-auto mb-4 rounded-2xl overflow-hidden">
+                    <Image
+                        src="https://i.imgur.com/MeSEeip.png"
+                        alt="Mike Rodriguez - Fitness Coach"
+                        fill
+                        className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Mike Rodriguez</h3>
+                  <p className="text-purple-400 font-semibold mb-2">Fitness Coach</p>
+                  <p className="text-gray-300 text-sm mb-3">
+                    Specializes in HIIT, functional training, and performance
+                  </p>
+                  <div className="flex justify-center space-x-2">
+                    <Badge className="bg-purple-600/50 text-purple-200">ACSM Certified</Badge>
+                    <Badge className="bg-pink-600/50 text-pink-200">HIIT</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
+                <CardContent className="p-6 text-center">
+                  <div className="relative w-32 h-48 mx-auto mb-4 rounded-2xl overflow-hidden">
+                    <Image
+                        src="https://i.imgur.com/48AXx83.png"
+                        alt="Emma Chen - Yoga Instructor"
+                        fill
+                        className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Emma Chen</h3>
+                  <p className="text-purple-400 font-semibold mb-2">Yoga Instructor</p>
+                  <p className="text-gray-300 text-sm mb-3">
+                    Certified in Hatha, Vinyasa, and therapeutic yoga practices
+                  </p>
+                  <div className="flex justify-center space-x-2">
+                    <Badge className="bg-purple-600/50 text-purple-200">RYT-500</Badge>
+                    <Badge className="bg-pink-600/50 text-pink-200">Meditation</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
+                <CardContent className="p-6 text-center">
+                  <div className="relative w-32 h-48 mx-auto mb-4 rounded-2xl overflow-hidden">
+                    <Image
+                        src="https://i.imgur.com/nBbGiYE.png"
+                        alt="David Thompson - Sports Therapist"
+                        fill
+                        className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">David Thompson</h3>
+                  <p className="text-purple-400 font-semibold mb-2">Sports Therapist</p>
+                  <p className="text-gray-300 text-sm mb-3">
+                    Injury prevention, rehabilitation, and sports massage therapy
+                  </p>
+                  <div className="flex justify-center space-x-2">
+                    <Badge className="bg-purple-600/50 text-purple-200">Licensed PT</Badge>
+                    <Badge className="bg-pink-600/50 text-pink-200">Rehab</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="text-center mt-12">
+              <Button
+                  onClick={() => scrollToSection("contact")}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-3">
+                Book a Consultation
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Gym Equipment Showcase */}
+        <section id="equipment" className="py-20 bg-gradient-to-r from-slate-900 to-purple-900">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                State-of-the-Art Equipment
+              </h2>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                Train with the latest and most advanced fitness equipment in the industry.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="relative h-64 rounded-lg overflow-hidden group">
+                <Image
+                    src="https://cdn.mos.cms.futurecdn.net/5QV4TcUWvsfYmm9hAdWXHD.jpg"
+                    alt="Cardio Equipment"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute bottom-4 left-4">
+                  <h3 className="text-white text-xl font-bold">Cardio Zone</h3>
+                  <p className="text-gray-300">Treadmills, bikes, ellipticals</p>
+                </div>
+              </div>
+
+              <div className="relative h-64 rounded-lg overflow-hidden group">
+                <Image
+                    src="https://powersystems.com/cdn/shop/files/0722_strength_lp_hero_1920x700_v2.jpg?v=1738320606&width=3840"
+                    alt="Weight Training"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute bottom-4 left-4">
+                  <h3 className="text-white text-xl font-bold">Strength Training</h3>
+                  <p className="text-gray-300">Free weights & machines</p>
+                </div>
+              </div>
+
+              <div className="relative h-64 rounded-lg overflow-hidden group">
+                <Image
+                    src="https://media.istockphoto.com/id/1153467910/photo/disassembled-barbell-medicine-ball-kettlebell-dumbbell-jump-rope-lying-on-floor-in-gym-sports.jpg?s=612x612&w=0&k=20&c=SVGa2NhVYgdF6P7xbejb9BoWJhKYfIclkqoyIoiPOKE="
+                    alt="Functional Training"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute bottom-4 left-4">
+                  <h3 className="text-white text-xl font-bold">Functional Area</h3>
+                  <p className="text-gray-300">TRX, kettlebells, battle ropes</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -645,317 +1024,6 @@ export default function GymWebsite() {
           </div>
         </section>
 
-        {/* Services Section */}
-        <section id="services" className="py-20 bg-gradient-to-l from-slate-800 to-slate-900">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Our Services
-              </h2>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                Comprehensive fitness solutions designed to help you reach your goals.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardHeader>
-                  <div className="relative mb-4 h-48 rounded-lg overflow-hidden">
-                    <Image
-                        src="https://i.imgur.com/GMfVqYs.jpeg"
-                        alt="Personal Training Session"
-                        fill
-                        className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  </div>
-                  <div
-                      className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-4">
-                    <Dumbbell className="h-6 w-6 text-white"/>
-                  </div>
-                  <CardTitle className="text-white">Personal Training</CardTitle>
-                  <CardDescription className="text-gray-300">One-on-one sessions with certified
-                    trainers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-gray-300">
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Customized workout plans
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Nutrition guidance
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Progress tracking
-                    </li>
-                  </ul>
-                  <div className="mt-4">
-                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600">From $80/session</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardHeader>
-                  <div className="relative mb-4 h-48 rounded-lg overflow-hidden">
-                    <Image
-                        src="https://i.imgur.com/DwZQSkP.jpeg"
-                        alt="Group Fitness Class"
-                        fill
-                        className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  </div>
-                  <div
-                      className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-4">
-                    <Users className="h-6 w-6 text-white"/>
-                  </div>
-                  <CardTitle className="text-white">Group Classes</CardTitle>
-                  <CardDescription className="text-gray-300">High-energy group fitness sessions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-gray-300">
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      HIIT & Cardio
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Yoga & Pilates
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Strength Training
-                    </li>
-                  </ul>
-                  <div className="mt-4">
-                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600">From $25/class</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardHeader>
-                  <div className="relative mb-4 h-48 rounded-lg overflow-hidden">
-                    <Image
-                        src="/placeholder.svg?height=200&width=400&text=Healthy+Meal+Prep+and+Nutrition"
-                        alt="Nutrition and Meal Planning"
-                        fill
-                        className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  </div>
-                  <div
-                      className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-4">
-                    <Target className="h-6 w-6 text-white"/>
-                  </div>
-                  <CardTitle className="text-white">Nutrition Coaching</CardTitle>
-                  <CardDescription className="text-gray-300">
-                    Professional dietary guidance and meal planning
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-gray-300">
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Meal planning
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Supplement advice
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400"/>
-                      Body composition analysis
-                    </li>
-                  </ul>
-                  <div className="mt-4">
-                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600">From $60/session</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-        {/* Our Staff Section */}
-        <section id="staff" className="py-20 bg-gradient-to-l from-purple-900 to-slate-900">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Meet Our Expert Team
-              </h2>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                Our certified trainers and fitness experts are here to guide you on your fitness journey.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardContent className="p-6 text-center">
-                  <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
-                    <Image
-                        src="/placeholder.svg?height=150&width=150&text=Sarah+Johnson+Personal+Trainer"
-                        alt="Sarah Johnson - Head Trainer"
-                        fill
-                        className="object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Sarah Johnson</h3>
-                  <p className="text-purple-400 font-semibold mb-2">Head Trainer</p>
-                  <p className="text-gray-300 text-sm mb-3">
-                    10+ years experience in strength training and nutrition coaching
-                  </p>
-                  <div className="flex justify-center space-x-2">
-                    <Badge className="bg-purple-600/50 text-purple-200">NASM Certified</Badge>
-                    <Badge className="bg-pink-600/50 text-pink-200">Nutrition</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardContent className="p-6 text-center">
-                  <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
-                    <Image
-                        src="/placeholder.svg?height=150&width=150&text=Mike+Rodriguez+Fitness+Coach"
-                        alt="Mike Rodriguez - Fitness Coach"
-                        fill
-                        className="object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Mike Rodriguez</h3>
-                  <p className="text-purple-400 font-semibold mb-2">Fitness Coach</p>
-                  <p className="text-gray-300 text-sm mb-3">
-                    Specializes in HIIT, functional training, and athletic performance
-                  </p>
-                  <div className="flex justify-center space-x-2">
-                    <Badge className="bg-purple-600/50 text-purple-200">ACSM Certified</Badge>
-                    <Badge className="bg-pink-600/50 text-pink-200">HIIT</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardContent className="p-6 text-center">
-                  <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
-                    <Image
-                        src="/placeholder.svg?height=150&width=150&text=Emma+Chen+Yoga+Instructor"
-                        alt="Emma Chen - Yoga Instructor"
-                        fill
-                        className="object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Emma Chen</h3>
-                  <p className="text-purple-400 font-semibold mb-2">Yoga Instructor</p>
-                  <p className="text-gray-300 text-sm mb-3">
-                    Certified in Hatha, Vinyasa, and therapeutic yoga practices
-                  </p>
-                  <div className="flex justify-center space-x-2">
-                    <Badge className="bg-purple-600/50 text-purple-200">RYT-500</Badge>
-                    <Badge className="bg-pink-600/50 text-pink-200">Meditation</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                  className="bg-black/20 backdrop-blur-md border-white/10 hover:border-purple-400/50 transition-colors">
-                <CardContent className="p-6 text-center">
-                  <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">
-                    <Image
-                        src="/placeholder.svg?height=150&width=150&text=David+Thompson+Sports+Therapist"
-                        alt="David Thompson - Sports Therapist"
-                        fill
-                        className="object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">David Thompson</h3>
-                  <p className="text-purple-400 font-semibold mb-2">Sports Therapist</p>
-                  <p className="text-gray-300 text-sm mb-3">
-                    Injury prevention, rehabilitation, and sports massage therapy
-                  </p>
-                  <div className="flex justify-center space-x-2">
-                    <Badge className="bg-purple-600/50 text-purple-200">Licensed PT</Badge>
-                    <Badge className="bg-pink-600/50 text-pink-200">Rehab</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="text-center mt-12">
-              <Button
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-3">
-                Book a Consultation
-              </Button>
-            </div>
-          </div>
-        </section>
-        {/* Gym Equipment Showcase */}
-        <section id="equipment" className="py-20 bg-gradient-to-r from-slate-900 to-purple-900">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                State-of-the-Art Equipment
-              </h2>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                Train with the latest and most advanced fitness equipment in the industry.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="relative h-64 rounded-lg overflow-hidden group">
-                <Image
-                    src="https://cdn.mos.cms.futurecdn.net/5QV4TcUWvsfYmm9hAdWXHD.jpg"
-                    alt="Cardio Equipment"
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                <div className="absolute bottom-4 left-4">
-                  <h3 className="text-white text-xl font-bold">Cardio Zone</h3>
-                  <p className="text-gray-300">Treadmills, bikes, ellipticals</p>
-                </div>
-              </div>
-
-              <div className="relative h-64 rounded-lg overflow-hidden group">
-                <Image
-                    src="https://powersystems.com/cdn/shop/files/0722_strength_lp_hero_1920x700_v2.jpg?v=1738320606&width=3840"
-                    alt="Weight Training"
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                <div className="absolute bottom-4 left-4">
-                  <h3 className="text-white text-xl font-bold">Strength Training</h3>
-                  <p className="text-gray-300">Free weights & machines</p>
-                </div>
-              </div>
-
-              <div className="relative h-64 rounded-lg overflow-hidden group">
-                <Image
-                    src="https://media.istockphoto.com/id/1153467910/photo/disassembled-barbell-medicine-ball-kettlebell-dumbbell-jump-rope-lying-on-floor-in-gym-sports.jpg?s=612x612&w=0&k=20&c=SVGa2NhVYgdF6P7xbejb9BoWJhKYfIclkqoyIoiPOKE="
-                    alt="Functional Training"
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                <div className="absolute bottom-4 left-4">
-                  <h3 className="text-white text-xl font-bold">Functional Area</h3>
-                  <p className="text-gray-300">TRX, kettlebells, battle ropes</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
         {/* Contact Section */}
         <section id="contact" className="py-20 bg-gradient-to-r from-purple-900 to-slate-900">
           <div className="container mx-auto px-4">
@@ -1010,58 +1078,93 @@ export default function GymWebsite() {
                   <CardTitle className="text-white">Send us a message</CardTitle>
                   <CardDescription className="text-gray-300">We'll get back to you within 24 hours</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
+                <CardContent>
+                  <form onSubmit={handleContactSubmit} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName" className="text-white">
+                          First Name
+                        </Label>
+                        <Input
+                            id="firstName"
+                            placeholder="John"
+                            value={contactForm.firstName}
+                            onChange={(e) => setContactForm({...contactForm, firstName: e.target.value})}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                            required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName" className="text-white">
+                          Last Name
+                        </Label>
+                        <Input
+                            id="lastName"
+                            placeholder="Doe"
+                            value={contactForm.lastName}
+                            onChange={(e) => setContactForm({...contactForm, lastName: e.target.value})}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                            required
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-white">
-                        First Name
+                      <Label htmlFor="email" className="text-white">
+                        Email
                       </Label>
                       <Input
-                          id="firstName"
-                          placeholder="John"
+                          id="email"
+                          type="email"
+                          placeholder="john@example.com"
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
                           className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                          required
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-white">
-                        Last Name
+                      <Label htmlFor="message" className="text-white">
+                        Message
                       </Label>
-                      <Input
-                          id="lastName"
-                          placeholder="Doe"
-                          className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                      <textarea
+                          id="message"
+                          rows={4}
+                          placeholder="Tell us about your fitness goals..."
+                          value={contactForm.message}
+                          onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          required
                       />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white">
-                      Email
-                    </Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="john@example.com"
-                        className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                    />
-                  </div>
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    >
+                      {isSubmitting ? "Sending..." : "Send Message"}
+                    </Button>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="message" className="text-white">
-                      Message
-                    </Label>
-                    <textarea
-                        id="message"
-                        rows={4}
-                        placeholder="Tell us about your fitness goals..."
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    />
-                  </div>
-
-                  <Button
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                    Send Message
-                  </Button>
+                    {/* Status Messages */}
+                    {submitStatus && (
+                        <div
+                            className={`flex items-center gap-2 p-3 rounded-lg ${
+                                submitStatus.type === "success"
+                                    ? "bg-green-600/20 border border-green-400/30 text-green-200"
+                                    : "bg-red-600/20 border border-red-400/30 text-red-200"
+                            }`}
+                        >
+                          {submitStatus.type === "success" ? (
+                              <CheckCircle className="h-5 w-5"/>
+                          ) : (
+                              <AlertCircle className="h-5 w-5"/>
+                          )}
+                          <span>{submitStatus.message}</span>
+                        </div>
+                    )}
+                  </form>
                 </CardContent>
               </Card>
             </div>
