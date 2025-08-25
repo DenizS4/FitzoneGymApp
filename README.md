@@ -58,10 +58,10 @@ Designed for fitness enthusiasts and gym owners, Fitzone Gym App combines a slee
    ```bash
    RESEND_API_KEY=your_resend_api_key_here
    
-5. **Run the project**
+4. **Run the project**
    ```bash
    npm run dev
 
-6. **Open the project**
+5. **Open the project**
    ```bash
    http://localhost:3000
